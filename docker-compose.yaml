@@ -1,0 +1,14 @@
+---
+version: '3.8'
+services:
+  myuplink:
+    image: jryberg/myuplink_prometheus_exporter:latest
+    container_name: myuplink
+    restart: unless-stopped
+    environment:
+      - client_id=${CLIENT_ID}
+      - client_secret=${CLIENT_SECRET}
+      - port=8000
+      - debug=False
+    ports:
+      - 8000:8000
