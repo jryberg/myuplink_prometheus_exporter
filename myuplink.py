@@ -127,8 +127,9 @@ class MyUplink:
         self.logger.warning(f"Unexpected response from API: {result}")
         return []
 
-    def to_snake_case(self, string: str) -> str:
-        output = snakecase(string)
+    def fix_name(self, string: str) -> str:
+        output = string.rstrip()
+        output = snakecase(output)
         output = output.replace('å', 'a')
         output = output.replace('ä', 'a')
         output = output.replace('ö', 'o')
@@ -137,20 +138,24 @@ class MyUplink:
     def handle_metrics(self, device_id: str, metrics: list) -> None:
         for metric in metrics:
             if 'parameterName' in metric and 'value' in metric:
-                name = f"myuplink_{self.to_snake_case(metric['parameterName'])}"
+                name = f"myuplink_{self.fix_name(metric['parameterName'])}"
                 if name not in self.registered_metrics:
-                    if 'category' in metric:
-                        self.logger.info(
-                                f"Registering metric {name}, category: {metric['category']}")
-                        self.registered_metrics[name] = Gauge(
-                                name,
-                                metric['parameterName'],
-                                ['device_id', 'category'])
-                    else:
-                        self.logger.info(f"Registering metric {name}")
-                        self.registered_metrics[name] = Gauge(name,
-                                metric['parameterName'],
-                                ['device_id'])
+                    try:
+                        if 'category' in metric:
+                            self.logger.info(
+                                    f"Registering metric {name}, category: {metric['category']}")
+                            self.registered_metrics[name] = Gauge(
+                                    name,
+                                    metric['parameterName'],
+                                    ['device_id', 'category'])
+                        else:
+                            self.logger.info(f"Registering metric {name}")
+                            self.registered_metrics[name] = Gauge(name,
+                                    metric['parameterName'],
+                                    ['device_id'])
+                    except ValueError:
+                        self.logger.warning(
+                            f"Could not register {name}")
                 if 'category' in metric:
                     self.registered_metrics[name].labels(
                             device_id,
