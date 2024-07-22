@@ -1,5 +1,4 @@
 ---
-version: '3.8'
 services:
   myuplink:
     image: jryberg/myuplink_prometheus_exporter:latest
