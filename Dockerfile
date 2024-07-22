@@ -1,5 +1,5 @@
 # Build run container
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 LABEL maintainer="Johan Ryberg <johan@securit.se>"
 
 # Debian settings
@@ -8,9 +8,9 @@ ENV DEBIAN_FRONTEND noninteractive
 # Install needed tools tools
 RUN apt-get update && \
     apt-get -y dist-upgrade && \
-    apt-get -y install python3 python3-pip tini apt-utils 
-RUN pip3 install --upgrade pip && \
-    pip3 install case-converter prometheus_client requests
+    apt-get -y install python3 python3-pip python3-prometheus-client python3-requests tini apt-utils
+RUN pip3 install --break-system-packages --upgrade pip && \
+    pip3 install --break-system-packages case-converter
 
 # Add files
 ADD myuplink.py /usr/local/bin/
