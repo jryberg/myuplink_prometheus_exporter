@@ -1,6 +1,7 @@
 ---
 services:
   myuplink:
+    build: .
     image: jryberg/myuplink_prometheus_exporter:latest
     container_name: myuplink
     restart: unless-stopped

@@ -38,10 +38,9 @@ class MyUplink:
             self.logger.info(f"Listen on port {self.listen_port}")
 
             self.base_url = os.environ.get("base_url", "https://api.myuplink.com")
-            try:
-                self.client_id = os.environ.get("client_id")
-                self.client_secret = os.environ.get("client_secret")
-            except ValueError:
+            self.client_id = os.environ.get("client_id")
+            self.client_secret = os.environ.get("client_secret")
+            if not self.client_id or not self.client_secret:
                 self.logger.critical(
                         "client_id and client_secret is mandatory environment variables")
                 sys.exit(1)
@@ -53,7 +52,7 @@ class MyUplink:
     def request_get_data(self, endpoint: str):
         payload = {}
 
-        if (datetime.datetime.utcnow() - self.token_timestamp).total_seconds() < self.refresh_in:
+        if (datetime.datetime.utcnow() - self.token_timestamp).total_seconds() >= self.refresh_in:
             self.logger.debug(f"Seconds since last refresh of token: {(datetime.datetime.utcnow() - self.token_timestamp).total_seconds()}")
             self.refresh_token()
         else:
@@ -69,6 +68,7 @@ class MyUplink:
             # Try to authenticate again if not authenticated
             if response.status_code == 401:
                 self.refresh_token()
+                headers = {'Authorization': 'Bearer ' + self.token}
                 response = requests.get(f"{self.base_url}{endpoint}",
                                         headers=headers,
                                         verify=True,
@@ -95,20 +95,21 @@ class MyUplink:
         return payload
 
     def refresh_token(self):
-        token_req_payload = {'grant_type': 'client_credentials'}
+        token_req_payload = {'grant_type': 'client_credentials', 'scope': 'READSYSTEM'}
         token_response = requests.post(f"{self.base_url}/oauth/token",
             data=token_req_payload, verify=True, allow_redirects=False,
             auth=(self.client_id, self.client_secret),
             timeout=30)
-        if token_response.status_code !=200:
+        if token_response.status_code != 200:
             self.logger.critical("Failed to obtain token from server")
+            return
         response = json.loads(token_response.text)
         self.logger.debug(f"Token: {response}")
         if 'access_token' in response:
             self.token = response['access_token']
             self.token_timestamp = datetime.datetime.utcnow()
         if 'expires_in' in response:
-            self.expires_in = response['expires_in']
+            self.refresh_in = response['expires_in']
 
     def get_systems(self) -> dict:
         result = self.request_get_data("/v2/systems/me")
@@ -128,7 +129,7 @@ class MyUplink:
         return []
 
     def fix_name(self, string: str) -> str:
-        output = string.rstrip()
+        output = string.replace('\r\n', ' ').replace('\r', ' ').replace('\n', ' ').strip()
         output = snakecase(output)
         output = output.replace('å', 'a')
         output = output.replace('ä', 'a')
@@ -156,6 +157,7 @@ class MyUplink:
                     except ValueError:
                         self.logger.warning(
                             f"Could not register {name}")
+                        continue
                 if 'category' in metric:
                     self.registered_metrics[name].labels(
                             device_id,
