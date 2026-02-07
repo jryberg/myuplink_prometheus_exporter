@@ -14,7 +14,7 @@ class MyUplink:
         try:
             # Variables
             self.registered_metrics = {}
-            self.token_timestamp = datetime.datetime(1677, 9, 21)
+            self.token_timestamp = datetime.datetime(1677, 9, 21, tzinfo=datetime.UTC)
             self.token = ""
             self.refresh_in = 0
 
@@ -52,11 +52,11 @@ class MyUplink:
     def request_get_data(self, endpoint: str):
         payload = {}
 
-        if (datetime.datetime.utcnow() - self.token_timestamp).total_seconds() >= self.refresh_in:
-            self.logger.debug(f"Seconds since last refresh of token: {(datetime.datetime.utcnow() - self.token_timestamp).total_seconds()}")
+        if (datetime.datetime.now(datetime.UTC) - self.token_timestamp).total_seconds() >= self.refresh_in:
+            self.logger.debug(f"Seconds since last refresh of token: {(datetime.datetime.now(datetime.UTC) - self.token_timestamp).total_seconds()}")
             self.refresh_token()
         else:
-            self.logger.debug(f"Seconds since last refresh of token: {(datetime.datetime.utcnow() - self.token_timestamp).total_seconds()}")
+            self.logger.debug(f"Seconds since last refresh of token: {(datetime.datetime.now(datetime.UTC) - self.token_timestamp).total_seconds()}")
 
         if self.token:
             headers = {'Authorization': 'Bearer ' + self.token}
@@ -107,7 +107,7 @@ class MyUplink:
         self.logger.debug(f"Token: {response}")
         if 'access_token' in response:
             self.token = response['access_token']
-            self.token_timestamp = datetime.datetime.utcnow()
+            self.token_timestamp = datetime.datetime.now(datetime.UTC)
         if 'expires_in' in response:
             self.refresh_in = response['expires_in']
 
