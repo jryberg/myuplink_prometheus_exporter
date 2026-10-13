@@ -1,5 +1,5 @@
 # Build run container
-FROM python:3.14-trixie
+FROM python:3.15-trixie
 LABEL maintainer="Johan Ryberg <johan@securit.se>"
 
 # Debian settings
